@@ -23,13 +23,14 @@ typedef struct{
   size_t lastp;//if we have specified a region, then this is the last index to use
 }rawdata;
 
+// information about input file(FOR saf.idx)
 typedef struct{
   size_t nSites;
-  myMap mm;
-  char *bgzf_pos;
-  char *bgzf_gls;
+  myMap mm;// Dictionary for (chromosome : [datm = [nSites, Pos, sAF (Sample allel frequency)]]
+  char *bgzf_pos;//name of input.psmc.gz file
+  char *bgzf_gls;//name of input.psmc.pos.gz file
   int version;//1 is gl, otherwise assuming fasta
-  char *fname;//input.saf.idx?
+  char *fname;//input.saf.idx? NOW VCF MAY BE IMPLEMENTET
   perFasta *pf;
 }perpsmc;
 

@@ -26,7 +26,7 @@ void perpsmc_destroy(perpsmc *pp){
   
   delete pp;
 }
-
+// Print information from index file(for psmc)
 void writepsmc_header(FILE *fp,perpsmc *pp,int onlysubset){
   fprintf(fp,"\t\tInformation from index file: nSites(total):%lu nChr:%lu\n",pp->nSites,pp->mm.size());
   
@@ -56,15 +56,35 @@ int psmcversion(const char *fname){
   gzclose(gz);
 
   if(0==strcmp(buf,"psmcv1"))
-    return 1;
+    return 1; 
+  else 
+    return 0;
+}
+
+int vcfversion(const char *fname){
+  FILE* vcf_in;
+  vcf_in = fopen(fname,"r");
+  if(vcf_in==NULL){
+    fprintf(stderr,"\t-> Problem opening file: \'%s\'",fname);
+    exit(0);
+  }
+  char buf[21];
+  fread(buf,sizeof(char),20,vcf_in);
+  buf[20] = '\0';
+  printf("\t-> Magic nr is: \'%s\'\n",buf);
+  fclose(vcf_in);
+  if(0==strcmp(buf,"##fileformat=VCFv4.2"))
+    return 1; 
   else 
     return 0;
 }
 
 
 
-
+// Create args->perc structure from filename and chr
+//add filenames of psmc.pos.gz and psmc.gz files into ret->bgzf_gls and pos
 perpsmc * perpsmc_init(char *fname,int nChr){
+  printf("STRING:%s ",fname);
   assert(fname);
   perpsmc *ret = new perpsmc ;
   ret->fname = strdup(fname);
@@ -137,6 +157,7 @@ perpsmc * perpsmc_init(char *fname,int nChr){
       fprintf(stderr,"[%s->%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
       exit(0);
     }
+    printf("nsites = %d\npos = %ld\n saf = %ld\n",d.nSites,d.pos,d.saf);
   
     myMap::iterator it = ret->mm.find(chr);
     if(it==ret->mm.end())
@@ -145,14 +166,15 @@ perpsmc * perpsmc_init(char *fname,int nChr){
       fprintf(stderr,"Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",chr);
       exit(0);
     }
+
   }
   fclose(fp);
   char *tmp =(char*)calloc(strlen(fname)+100,1);//that should do it
-  tmp=strncpy(tmp,fname,strlen(fname)-3);
+  tmp=strncpy(tmp,fname,strlen(fname)-3);// -3 cause file is ends psmc.gz and we want to get rid of idx
   //  fprintf(stderr,"tmp:%s\n",tmp);
   
   char *tmp2 = (char*)calloc(strlen(fname)+100,1);//that should do it
-  snprintf(tmp2,strlen(fname)+100,"%sgz",tmp);
+  snprintf(tmp2,strlen(fname)+100,"%sgz",tmp);// we then add here gz so we change input.psmc.idx -> input.psmc.gz (actually thats a bit strange, maybe it should be added in documentation that psmc.gz file MUST be in the folder)
   fprintf(stderr,"\t-> Assuming .psmc.gz file: \'%s\'\n",tmp2);
   ret->bgzf_gls = strdup(tmp2);
   BGZF *tmpfp = NULL;
@@ -167,7 +189,7 @@ perpsmc * perpsmc_init(char *fname,int nChr){
   tmpfp=NULL;
   
   snprintf(tmp2,strlen(fname)+100,"%spos.gz",tmp);
-  fprintf(stderr,"\t-> Assuming .psmc.pos.gz: \'%s\'\n",tmp2);
+  fprintf(stderr,"\t-> Assuming .psmc.pos.gz: \'%s\'\n",tmp2);//Same, working directory should contatin that file.
   ret->bgzf_pos = strdup(tmp2);
   tmpfp = bgzf_open(ret->bgzf_pos,"r");
   if(tmpfp)
@@ -183,6 +205,11 @@ perpsmc * perpsmc_init(char *fname,int nChr){
 }
 
 
+
+
+
+
+//Open file and set pointer to offs byte
 BGZF *bgzf_open_seek(char *fname,int64_t offs){
   BGZF *ret = NULL;
   ret = bgzf_open(fname,"r");
@@ -191,11 +218,12 @@ BGZF *bgzf_open_seek(char *fname,int64_t offs){
 }
 
 
-//this functions returns the emissions
+//this functions returns the emissions(GLS)
+//Функия ищет запись о хромосоме, в файле 
 rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
   rawdata ret;
   assert(chr!=NULL);
-  
+  //printf("EMISSIONS");
   myMap::iterator it = pp->mm.find(chr);
   if(it==pp->mm.end()){
     fprintf(stderr,"\t-> [%s] Problem finding chr: \'%s\'\n",__FUNCTION__,chr);
@@ -208,32 +236,34 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
   double *tmpgls = new double[2*it->second.nSites];
 
   if(pp->version==1) { 
-    BGZF* bgzf_gls =bgzf_open_seek(pp->bgzf_gls,it->second.saf);
-    BGZF* bgzf_pos =bgzf_open_seek(pp->bgzf_pos,it->second.pos);
+    BGZF* bgzf_gls =bgzf_open_seek(pp->bgzf_gls,it->second.saf);//?Why do such offset???????
+    BGZF* bgzf_pos =bgzf_open_seek(pp->bgzf_pos,it->second.pos);//?same
 
     my_bgzf_read(bgzf_pos,ret.pos,sizeof(int)*it->second.nSites);
     my_bgzf_read(bgzf_gls,tmpgls,2*sizeof(double)*it->second.nSites);
 
     for(int i=0;i<it->second.nSites;i++){
-      ret.gls[i] = log(0);
+      ret.gls[i] = log(0);// = -infinity
+
       if(tmpgls[2*i]!=tmpgls[2*i+1]){
-	double mmax = std::max(tmpgls[2*i],tmpgls[2*i+1]);
-	double val = std::min(tmpgls[2*i],tmpgls[2*i+1]) - mmax;
+	      double mmax = std::max(tmpgls[2*i],tmpgls[2*i+1]);
+	      double val = std::min(tmpgls[2*i],tmpgls[2*i+1]) - mmax; //??? Why fill it min - max
 
-	ret.gls[i] = val;
-	if(tmpgls[2*i]<tmpgls[2*i+1])
-	  ret.gls[i] = -ret.gls[i];
+        ret.gls[i] = val;
+        if(tmpgls[2*i]<tmpgls[2*i+1])
+          ret.gls[i] = -ret.gls[i];//????Why reverse
 
-	//code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
+	      //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
 	
       }
     }
     delete [] tmpgls;
     bgzf_close(bgzf_gls);
     bgzf_close(bgzf_pos);
-  }else{
-    int asdf = it->second.nSites;
-    char *tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
+  }else{//Fasta file case
+    int asdf = it->second.nSites;//what means asdf(oh it's first 4 leters to the left)
+    char *tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);//read the sequence
+
     for(int i=0;i<it->second.nSites;i++){
       ret.pos[i] = i*blockSize;
       //important relates to problems with divide by zero in compuation of  backward probablity
