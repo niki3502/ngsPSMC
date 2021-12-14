@@ -1,7 +1,26 @@
+// #define TEST
+
 #include "vcfreader.h"
 #include <htslib/faidx.h>
 #include <htslib/vcf.h>
 #include <iostream>
+/*
+For name of vcf file and chromosome name(???ID) returns struct rawdata of gls scores
+
+PARAMETERS
+@ inf: char*
+file name string
+@ chr: char*
+chrom name
+
+RETURNS 
+@ret: rawdata
+structure
+
+
+
+
+*/
 rawdata readvcf(char* inf,char* chr){//infile
 
     int *pl = NULL;
@@ -34,7 +53,7 @@ rawdata readvcf(char* inf,char* chr){//infile
     int length;
     printf("Information from header:\n");
     for (int i = 0; i < hdr->n[BCF_DT_CTG]; ++i){
-        printf("%s\t%d\n", ctg[i].key, ctg[i].val->info[0]);
+        // printf("%s\t%ld\n", ctg[i].key, ctg[i].val->info[0]);
         if (strcmp(ctg[i].key,chr)==0){
             length = ctg[i].val->info[0];
         }
@@ -45,28 +64,47 @@ rawdata readvcf(char* inf,char* chr){//infile
 
     
 
-    tmpgls = (int*)calloc(length,sizeof(int));
-
+    tmpgls = (int*)calloc(2*length,sizeof(int));
     int k = 0;
     int pos = -1;
     while(bcf_read(fp, hdr, rec) == 0){
+        // fprintf(stderr,"@%d@%d\n",length,2*k);
         if (rec->rid!=rid)continue;
         if (pos == -1)pos = k;
         bcf_unpack(rec, BCF_UN_ALL);
         npl = bcf_get_format_int32(hdr, rec, "PL", &pl, &npl_arr);
-        tmpgls[k] = pl[0]; 
-        k+=1;      
+        //homozygotic sites are on 1,1+1,1+1+2,1+1+2+3
+        //TODO:  !!! CONSIDER <*> IN CODE !!! 
+        int u = 0;
+        for (int s = 0; s < rec->n_allele;s++){
+            tmpgls[2*k] += pl[u];//Homozygotic sum
+        
+            for(int v = 0; v < s; v++){
+                tmpgls[2*k+1] += pl[u+v];//Heterozygotic sum
+            }    
+            u += s+1;
+           
+        }
+        k+=1;   
     }
 
 
     ret.pos = new int[1];
     ret.len = k+1; 
-    ret.gls = new double[k+1];
+    ret.gls = new double[2*k+2];
     ret.pos[0] = pos;
+
     for (int i = 0; i<k+1;i++)
-    ret.gls[i] = (mygltype)tmpgls[i];
-
-
+    {
+        ret.gls[2*i] = (mygltype)tmpgls[i]/4;
+        ret.gls[2*i+1] = (mygltype)tmpgls[i]/6;
+        fprintf(stderr,"@gls[%d] = %lf\n@gls[%d] = %lf\n",2*i,ret.gls[2*i],2*i+1,ret.gls[2*i+1]);
+    }
     return ret;
 
+}
+
+int main(){
+    rawdata check;
+    check = readvcf("out4.vcf","chrM");
 }
