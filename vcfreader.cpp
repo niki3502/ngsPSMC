@@ -38,6 +38,7 @@ rawdata readvcf(char* inf,char* chr){//infile
     htsFile *fp = bcf_open(inf, "r");
     bcf1_t *rec = bcf_init();
     int *tmpgls;
+    
     if(fp == NULL) {
         throw std::runtime_error("Unable to open file.");
     }
@@ -47,11 +48,16 @@ rawdata readvcf(char* inf,char* chr){//infile
     if(hdr == NULL) {
         throw std::runtime_error("Unable to read header.");
     }
+    fprintf(stderr,"@%s",chr);
     int rid = bcf_hdr_name2id(hdr,chr);
+    
     bcf_idpair_t *ctg =hdr->id[BCF_DT_CTG];
     printf("file %s is successfully read\n",inf);
     int length;
     printf("Information from header:\n");
+    fprintf(stderr,"@file: %s\n",inf);
+    fprintf(stderr,"@chr: %s\n",chr);
+    
     for (int i = 0; i < hdr->n[BCF_DT_CTG]; ++i){
         // printf("%s\t%ld\n", ctg[i].key, ctg[i].val->info[0]);
         if (strcmp(ctg[i].key,chr)==0){
@@ -67,6 +73,7 @@ rawdata readvcf(char* inf,char* chr){//infile
     tmpgls = (int*)calloc(2*length,sizeof(int));
     int k = 0;
     int pos = -1;
+    
     while(bcf_read(fp, hdr, rec) == 0){
         // fprintf(stderr,"@%d@%d\n",length,2*k);
         if (rec->rid!=rid)continue;
@@ -88,7 +95,7 @@ rawdata readvcf(char* inf,char* chr){//infile
         k+=1;   
     }
 
-
+    
     ret.pos = new int[1];
     ret.len = k+1; 
     ret.gls = new double[2*k+2];
@@ -104,7 +111,7 @@ rawdata readvcf(char* inf,char* chr){//infile
 
 }
 
-int main(){
-    rawdata check;
-    check = readvcf("out4.vcf","chrM");
-}
+// int main(){
+//     rawdata check;
+//     check = readvcf("out4.vcf.gz","chrM");
+// }

@@ -9,7 +9,7 @@
 
 extern int nThreads;
 
-double lprod(double a,double b,double c,double d){
+double lprod(double a,double b,double c,double d){ // product of value in logarithm
   if(std::isinf(a)||std::isinf(b)||std::isinf(c)||std::isinf(d))
     return log(0.0);
   else
@@ -206,7 +206,7 @@ args * getArgs(int argc,char **argv,int dontprint){
   p->init_rho = 0.005367;
   p->init_theta = 0.000235;
   p->msstr = NULL;
-  
+  p->file_format = strdup("p");
   if(argc==0)
     return p;
 
@@ -234,13 +234,10 @@ args * getArgs(int argc,char **argv,int dontprint){
       p->nSites = atol(*(++argv));
     else  if(!strcasecmp(*argv,"-seed"))
       p->seed = atol(*(++argv));
-    else  if(!strcasecmp(*argv,"-infiletype"))
-      p->infile_type = strcmp(strdup(*++argv) , "vcf") ? 1 : 0;
     else  if(!strcasecmp(*argv,"-infile"))
-      if(p->infile_type == 1)
       p->psmc_infile = strdup(*++argv);
-      else
-      p->vcf_infile = strdup(*++argv);
+    else  if(!strcasecmp(*argv,"-infile"))
+      p->file_format = strdup(*++argv);
     else  if(!strcasecmp(*argv,"-init"))
       p->init = atof(*++argv);
     else  if(!strcasecmp(*argv,"-theta"))
@@ -266,7 +263,7 @@ args * getArgs(int argc,char **argv,int dontprint){
     argv++;
   }
   nThreads = p->nThreads;
-  p->perc = perpsmc_init(p->fname,p->nChr);
+  p->perc = infstruct_init(p->fname,p->nChr);
   if(p->seed==0)
     p->seed = time(NULL);
   srand48(p->seed);
@@ -287,7 +284,7 @@ args * getArgs(int argc,char **argv,int dontprint){
 void destroy_args(args *p){
   if(p->msstr)
     free(p->msstr);
-  perpsmc_destroy(p->perc);
+  infstruct_destroy(p->perc);
   if(p->par->par_map)
     free(p->par->par_map);
   if(p->par->pattern)
@@ -321,7 +318,7 @@ int main_psmc(int argc, char **argv){
   //this will printout the header
   writepsmc_header(stderr,pars->perc,1);
   
-  psmc_wrapper(pars,pars->blocksize);//here the main part begins
+  psmc_wrapper(pars,pars->blocksize);//here the main part begins //!! Why to do that if pars->blocksize is in pars?
   fprintf(stdout,"MM\t winsize(blocksize): %d\n",pars->blocksize);
 #if 0
     //below is old printout, keeping for reference

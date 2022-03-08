@@ -8,4 +8,4 @@
 #include "header.h"
 #include "psmcreader.h"
 
-rawdata readvcf(char* filename);
+rawdata readvcf(char* filename, char* chr);

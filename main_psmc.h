@@ -10,7 +10,7 @@ typedef struct{
   char *pattern;
   double *times;//<-splittimes
   double *params;//<- effective population sizes
-  double TR[2];//???????????????? \theta_0 in TR[1] \\ What is in TR[0]
+  double TR[2];// \theta_0 in TR[1] \\ What is in TR[0] RO is in TR[1]
   double MT;
 }psmc_par;
 
@@ -31,7 +31,7 @@ typedef struct {
   size_t nSites;
   int maxIter;
   double tole;
-  perpsmc * perc; 
+  infstruct * perc; 
   char *fname;
   int onlyOnce;
   long seed;//<-seed=-1 old version;seed=0 means time; othervise it will be used as seed
@@ -44,10 +44,10 @@ typedef struct {
   int doLinear;
   double init;
   char *msstr;
+  char * file_format;
   msarg msstr_arg;
   int infile_type; // 1 if vcf (0 else)
   char *psmc_infile;
-  char *vcf_infile;
   double init_theta;
   double init_rho;
   double init_max_t;

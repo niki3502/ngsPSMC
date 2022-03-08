@@ -15,7 +15,7 @@ int fexists(const char* str);
 typedef struct{
   size_t nSites;
   int64_t pos;
-  int64_t saf; //what is it? IT IS SAMPLE ALLEL FREQUENCY https://github.com/mfumagalli/Copenhagen/blob/master/Files/day2a.md
+  int64_t saf; //what is it? IT IS SAMPLE ALLEL FREQUENCY? https://github.com/mfumagalli/Copenhagen/blob/master/Files/day2a.md
 
 }datum;
 
