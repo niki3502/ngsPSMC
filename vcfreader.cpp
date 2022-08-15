@@ -28,7 +28,6 @@ std::vector<std::vector<float>> calcGL(char* vcfFN, char* chrom){
     }
 
 
-//    std::cout << "chromosome\tposition\tnum_alleles" << std::endl;
     while(bcf_read(vcf, hdr, rec) == 0) {
 
         if(rec == NULL) {
@@ -67,7 +66,8 @@ std::vector<std::vector<float>> calcGL(char* vcfFN, char* chrom){
         if (old_pos != -1 and rec->pos != old_pos+1 ){
 
             for (int k = 0; k < rec->pos - old_pos; k++){
-                gls.push_back({(float)255/4, 0});
+                1;
+//                gls.push_back({(float)255/4, 0});
             }
         }
 
