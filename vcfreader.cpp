@@ -28,7 +28,7 @@ std::vector<std::vector<float>> calcGL(char* vcfFN, char* chrom){
     }
 
 
-    std::cout << "chromosome\tposition\tnum_alleles" << std::endl;
+//    std::cout << "chromosome\tposition\tnum_alleles" << std::endl;
     while(bcf_read(vcf, hdr, rec) == 0) {
 
         if(rec == NULL) {
@@ -45,11 +45,11 @@ std::vector<std::vector<float>> calcGL(char* vcfFN, char* chrom){
         }
 
 
-        std::cout << bcf_hdr_id2name(hdr, rec->rid) << "\t" <<
-                  rec->pos << "\t" <<
-                  rec->n_allele << "\t" << nPL << "\t" <<
-                  PL[0] << "\t" <<
-                  std::endl;
+//        std::cout << bcf_hdr_id2name(hdr, rec->rid) << "\t" <<
+//                  rec->pos << "\t" <<
+//                  rec->n_allele << "\t" << nPL << "\t" <<
+//                  PL[0] << "\t" <<
+//                  std::endl;
 
 
         std::vector<float> pl_vec;
@@ -67,7 +67,7 @@ std::vector<std::vector<float>> calcGL(char* vcfFN, char* chrom){
         if (old_pos != -1 and rec->pos != old_pos+1 ){
 
             for (int k = 0; k < rec->pos - old_pos; k++){
-                gls.push_back({255, 0});
+                gls.push_back({(float)255/4, 0});
             }
         }
 
@@ -99,10 +99,6 @@ chrom name
 RETURNS
 @ret: rawdata
 structure
-
-
-
-
 */
 rawdata readvcf(char* inf,char* chr){//infile
 
@@ -119,7 +115,7 @@ rawdata readvcf(char* inf,char* chr){//infile
     for (int i = 0; i<ret.len; i++) {
         ret.gls[i] = log(0.0);// = -infinity
         if (tmpgls[i][0] != tmpgls[i][1]) {
-//            fprintf(stderr,"@tmps: %f,%f\n",tmpgls[i][0], tmpgls[i][1]);
+            fprintf(stderr,"@tmps: %f,%f\n",tmpgls[i][0], tmpgls[i][1]);
             double mmax = std::max(tmpgls[i][0], tmpgls[i][1]);
             double val =
                     std::min(tmpgls[i][0], tmpgls[i][1]) - mmax; //??? Why fill it min - max ANS:PREVENT UNDERFLOW
